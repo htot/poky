@@ -1325,6 +1325,7 @@ class RunQueue:
             "date" : self.cfgData.getVar("DATE"),
             "time" : self.cfgData.getVar("TIME"),
             "hashservaddr" : self.cooker.hashservaddr,
+            "makefifo" : self.cfgData.getVar("BB_MAKEFIFO"),
             "umask" : self.cfgData.getVar("BB_DEFAULT_UMASK"),
         }
 
@@ -1476,6 +1477,27 @@ class RunQueue:
 
         return bb.utils.better_eval(call, locs)
 
+    def setup_make_fifo(self):
+        fifoname = "/tmp/makefifo"
+        self.cfgData.setVar("BB_MAKEFIFO", fifoname)
+        m = re.search(r'-j (\d+)', self.cfgData.getVar("PARALLEL_MAKE"))
+        if m:
+            threads = int(m.group(1))
+        else:
+            threads = 1
+
+        if os.path.exists(fifoname):
+            os.remove(fifoname)
+        os.mkfifo(fifoname)
+
+        # Has to be open for read and writing
+        self.makereadfd = os.open(fifoname, os.O_RDONLY|os.O_NONBLOCK)
+        self.makewritefd = os.open(fifoname, os.O_WRONLY)
+        wfd = os.fdopen(self.makewritefd, 'w')
+
+        for x in range(0, threads):
+            wfd.write('+')
+
     def _execute_runqueue(self):
         """
         Run the tasks in a queue prepared by rqdata.prepare()
@@ -1509,6 +1531,8 @@ class RunQueue:
             depgraph = self.cooker.buildDependTree(self, self.rqdata.taskData)
             self.rqdata.init_progress_reporter.next_stage()
             bb.event.fire(bb.event.DepTreeGenerated(depgraph), self.cooker.data)
+
+            self.setup_make_fifo()
 
             if not self.dm_event_handler_registered:
                  res = bb.event.register(self.dm_event_handler_name,
@@ -1814,7 +1838,7 @@ class RunQueueExecute:
                 bb.fatal("Invalid BB_PRESSURE_MAX_MEMORY %s, minimum value is %s." % (self.max_memory_pressure, lower_limit))
             if self.max_memory_pressure > upper_limit:
                 bb.warn("Your build will be largely unregulated since BB_PRESSURE_MAX_MEMORY is set to %s. It is very unlikely that such high pressure will be experienced." % (self.max_io_pressure))
-            
+
         # List of setscene tasks which we've covered
         self.scenequeue_covered = set()
         # List of tasks which are covered (including setscene ones)
