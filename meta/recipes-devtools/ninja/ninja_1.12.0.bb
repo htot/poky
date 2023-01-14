@@ -6,9 +6,12 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a81586a64ad4e476c791cda7e2f2c52e"
 
 DEPENDS = "re2c-native ninja-native"
 
-SRCREV = "e72d1d581c945c158ed68d9bc48911063022a2c6"
+SRCREV = "9fc01d91dedaa3a5584844427ea0fa669fbce59a"
 
-SRC_URI = "git://github.com/ninja-build/ninja.git;branch=release;protocol=https"
+SRC_URI = "git://github.com/stefanb2/ninja.git;branch=topic-tokenpool-master;protocol=https \
+	file://ninja.py \
+	"
+SRC_URI[sha256sum] = "5702446cd3919e73b39e4de8903c087025f068edd11825f271d8b7fa026d71b0"
 UPSTREAM_CHECK_GITTAGREGEX = "v(?P<pver>.*)"
 
 S = "${WORKDIR}/git"
@@ -25,7 +28,8 @@ do_compile() {
 }
 
 do_install() {
-	install -D -m 0755  ${S}/ninja ${D}${bindir}/ninja
+	install -D -m 0755  ${WORKDIR}/ninja.py ${D}${bindir}/ninja
+	install -D -m 0755  ${S}/ninja ${D}${bindir}/ninja.run
 }
 
 BBCLASSEXTEND = "native nativesdk"
