@@ -1478,7 +1478,7 @@ class RunQueue:
         return bb.utils.better_eval(call, locs)
 
     def setup_make_fifo(self):
-        fifoname = "/tmp/makefifo"
+        fifoname = self.cfgData.getVar("TMPDIR") + "/makefifo"
         self.cfgData.setVar("BB_MAKEFIFO", fifoname)
         m = re.search(r'-j (\d+)', self.cfgData.getVar("PARALLEL_MAKE"))
         if m:
